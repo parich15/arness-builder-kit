@@ -1,5 +1,6 @@
-# El kit es el molde. Las instancias viven en OTROS repos, no aqui.
-libs/
-apps/
-docs/migration/apps/*/
-!docs/migration/apps/_template/
+# El kit es el MOLDE. Las instancias del arnes viven en OTROS repos, no aqui.
+# Ignoramos solo artefactos de prueba que se generen al testar el scaffold localmente.
+/_sandbox/
+/libs/
+/apps/
+node_modules/

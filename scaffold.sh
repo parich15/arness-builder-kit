@@ -1,107 +1,91 @@
 #!/usr/bin/env bash
-# scaffold.sh — Instancia el arnés (este kit) DENTRO de un repo destino.
+# scaffold.sh — Instancia el arnés DENTRO de un repo destino, según el TIPO de tarea.
 #
-# El kit es el MOLDE (genérico, vive una vez). Este script crea una INSTANCIA del arnés
-# dentro de tu repo de proyecto. El estado específico del proyecto (inventory, parity)
-# vive en ESE repo, versionado junto a su código — NO aquí.
+# El kit es el MOLDE (genérico). Este script crea una INSTANCIA del arnés dentro de tu
+# repo de proyecto. La maquinaria (PROTOCOL, gates, formato de tarjeta, status, scripts de
+# agentes) es la MISMA para cualquier tarea. Solo cambia el VOCABULARIO según --type:
+#
+#   migration  -> docs/migration/  : inventory.md, salvage-matrix.md, parity-matrix.md
+#   greenfield -> docs/build/      : spec.md, acceptance-matrix.md
 #
 # Uso:
-#   bash scaffold.sh <ruta-repo-destino> [app1 app2 ...]
-# Ejemplo:
-#   bash scaffold.sh ~/work/vw-monorepo venues billing auth
-#
-# Idempotente: no sobrescribe ficheros de estado ya rellenados (pregunta antes).
+#   bash scaffold.sh --type <migration|greenfield> <ruta-repo> [unidad1 unidad2 ...]
+# Ejemplos:
+#   bash scaffold.sh --type migration  ~/work/vw-monorepo venues billing auth
+#   bash scaffold.sh --type greenfield ~/work/nueva-app   auth dashboard
 
 set -euo pipefail
-
 KIT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-DEST="${1:-}"
-shift || true
-APPS=("$@")
 
-if [ -z "$DEST" ]; then
-  echo "ERROR: falta <ruta-repo-destino>." >&2
-  echo "Uso: bash scaffold.sh <ruta-repo-destino> [app1 app2 ...]" >&2
-  exit 2
-fi
-if [ ! -d "$DEST" ]; then
-  echo "ERROR: el destino '$DEST' no existe o no es un directorio." >&2
-  exit 2
-fi
-[ ${#APPS[@]} -eq 0 ] && APPS=(app1)
+TYPE="migration"
+if [ "${1:-}" = "--type" ]; then TYPE="$2"; shift 2; fi
+DEST="${1:-}"; shift || true
+UNITS=("$@")
 
-echo "Kit (molde):   $KIT_DIR"
-echo "Destino (repo): $DEST"
-echo "Apps:           ${APPS[*]}"
+case "$TYPE" in migration|greenfield) ;; *) echo "ERROR: --type debe ser migration|greenfield" >&2; exit 2;; esac
+if [ -z "$DEST" ] || [ ! -d "$DEST" ]; then echo "ERROR: destino inválido: '$DEST'" >&2; exit 2; fi
+[ ${#UNITS[@]} -eq 0 ] && UNITS=(unit1)
+
+echo "Tipo:    $TYPE"
+echo "Kit:     $KIT_DIR"
+echo "Destino: $DEST"
+echo "Unidades: ${UNITS[*]}"
 echo ""
 
-# 1. Copiar las piezas GENÉRICAS del arnés (no se editan por proyecto, salvo gates).
-echo "▶ Copiando arnés al repo destino…"
-mkdir -p "$DEST/docs/migration/apps" "$DEST/tools/gates" "$DEST/cards"
-
-# PROTOCOL: copia como PROTOCOL.md (no .template) si no existe ya.
-if [ ! -f "$DEST/docs/migration/PROTOCOL.md" ]; then
-  cp "$KIT_DIR/PROTOCOL.template.md" "$DEST/docs/migration/PROTOCOL.md"
-  echo "  + docs/migration/PROTOCOL.md"
-else
-  echo "  = PROTOCOL.md ya existe — no toco"
-fi
-
-# Gates: siempre se actualizan (son código, no estado). Adapta boundaries por proyecto luego.
+# ── 1. MAQUINARIA (idéntica para los dos tipos) ──────────────────────
+mkdir -p "$DEST/tools/gates" "$DEST/tools/agents" "$DEST/cards"
+[ -f "$DEST/docs/PROTOCOL.md" ] || { mkdir -p "$DEST/docs"; cp "$KIT_DIR/PROTOCOL.template.md" "$DEST/docs/PROTOCOL.md"; echo "  + docs/PROTOCOL.md"; }
 cp "$KIT_DIR/tools/gates/"*.mjs "$DEST/tools/gates/"
-cp "$KIT_DIR/tools/gates/run-all.sh" "$DEST/tools/gates/"
-chmod +x "$DEST/tools/gates/run-all.sh"
-echo "  + tools/gates/ (run-all.sh + 3 gates)"
-
-# Plantilla de tarjeta (referencia para quien escribe tarjetas).
+cp "$KIT_DIR/tools/gates/run-all.sh" "$DEST/tools/gates/"; chmod +x "$DEST/tools/gates/run-all.sh"
 cp "$KIT_DIR/cards/card.template.md" "$DEST/cards/"
-echo "  + cards/card.template.md"
-
-# Estado base que se rellena: inventory + salvage (solo si no existen).
-for f in inventory.md salvage-matrix.md; do
-  if [ ! -f "$DEST/docs/migration/$f" ]; then
-    cp "$KIT_DIR/docs/migration/$f" "$DEST/docs/migration/$f"
-    echo "  + docs/migration/$f (rellénalo)"
-  else
-    echo "  = docs/migration/$f ya existe — no toco"
-  fi
-done
-
-# 2. Instanciar la parity-matrix + status por cada app (renombrando _template).
-for app in "${APPS[@]}"; do
-  appdir="$DEST/docs/migration/apps/$app"
-  if [ -d "$appdir" ]; then
-    echo "  = app '$app' ya tiene carpeta — no toco"
-    continue
-  fi
-  mkdir -p "$appdir"
-  sed "s/<APP>/$app/g" "$KIT_DIR/docs/migration/apps/_template/parity-matrix.md" > "$appdir/parity-matrix.md"
-  sed "s/<APP>/$app/g" "$KIT_DIR/docs/migration/apps/_template/status.md"        > "$appdir/status.md"
-  echo "  + docs/migration/apps/$app/ (parity-matrix + status)"
-done
-
-# 3. Copiar los scripts de agentes (profiles + board) al repo, para que vivan con el proyecto.
-mkdir -p "$DEST/tools/agents"
-cp "$KIT_DIR/agents/"*.sh "$DEST/tools/agents/"
+cp "$KIT_DIR/agents/"*.sh "$DEST/tools/agents/" && chmod +x "$DEST/tools/agents/"*.sh
 cp "$KIT_DIR/agents/AGENTS.md" "$DEST/tools/agents/"
-chmod +x "$DEST/tools/agents/"*.sh
-echo "  + tools/agents/ (setup-profiles.sh, setup-board.sh, AGENTS.md)"
+echo "  + tools/gates/ (run-all.sh + 3 gates) · tools/agents/ · cards/"
+
+# ── 2. VOCABULARIO (según tipo) ──────────────────────────────────────
+if [ "$TYPE" = "migration" ]; then
+  SRC="$KIT_DIR/templates/migration"
+  BASE="$DEST/docs/migration"; APPS="$BASE/apps"
+  mkdir -p "$APPS"
+  for f in inventory.md salvage-matrix.md; do
+    [ -f "$BASE/$f" ] || { cp "$SRC/$f" "$BASE/$f"; echo "  + docs/migration/$f (rellénalo)"; }
+  done
+  for u in "${UNITS[@]}"; do
+    [ -d "$APPS/$u" ] && { echo "  = app '$u' ya existe"; continue; }
+    mkdir -p "$APPS/$u"
+    sed "s/<APP>/$u/g" "$SRC/apps/_template/parity-matrix.md" > "$APPS/$u/parity-matrix.md"
+    sed "s/<APP>/$u/g" "$SRC/apps/_template/status.md"        > "$APPS/$u/status.md"
+    echo "  + docs/migration/apps/$u/ (parity-matrix + status)"
+  done
+else
+  SRC="$KIT_DIR/templates/greenfield"
+  BASE="$DEST/docs/build"; COMP="$BASE/components"
+  mkdir -p "$COMP"
+  [ -f "$BASE/spec.md" ] || { cp "$SRC/spec.md" "$BASE/spec.md"; echo "  + docs/build/spec.md (rellénalo PRIMERO)"; }
+  for u in "${UNITS[@]}"; do
+    [ -d "$COMP/$u" ] && { echo "  = component '$u' ya existe"; continue; }
+    mkdir -p "$COMP/$u"
+    sed "s/<CAPABILITY>/$u/g" "$SRC/components/_template/acceptance-matrix.md" > "$COMP/$u/acceptance-matrix.md"
+    sed "s/<APP>/$u/g"        "$SRC/components/_template/status.md"            > "$COMP/$u/status.md"
+    echo "  + docs/build/components/$u/ (acceptance-matrix + status)"
+  done
+fi
 
 cat <<EOF
 
-✅ Arnés instanciado en: $DEST
+✅ Arnés ($TYPE) instanciado en: $DEST
 
-SIGUIENTES PASOS (dentro del repo destino):
+SIGUIENTES PASOS:
   cd "$DEST"
-  # 1. Verifica que los gates corren (en vacío deberían pasar):
-  bash tools/gates/run-all.sh ${APPS[0]}
-  # 2. Rellena el estado real:
-  #    docs/migration/inventory.md, salvage-matrix.md
-  #    docs/migration/apps/<app>/parity-matrix.md (fila a fila)
-  # 3. Adapta los gates a tu stack (descomenta las líneas nx en run-all.sh,
-  #    ajusta los dominios en boundaries-extra.mjs).
-  # 4. Crea la jerarquía de agentes y el board:
-  bash tools/agents/setup-profiles.sh
-  bash tools/agents/setup-board.sh ${APPS[0]}
-  # 5. git add docs/migration tools/ cards/  &&  git commit -m "chore: bootstrap agentic harness"
+  bash tools/gates/run-all.sh ${UNITS[0]}        # verifica gates (verdes en vacío)
+EOF
+if [ "$TYPE" = "migration" ]; then
+  echo "  # rellena docs/migration/inventory.md + apps/<u>/parity-matrix.md (fila a fila)"
+else
+  echo "  # rellena docs/build/spec.md PRIMERO, luego components/<u>/acceptance-matrix.md"
+fi
+cat <<EOF
+  bash tools/agents/setup-profiles.sh            # crea jerarquía de agentes
+  bash tools/agents/setup-board.sh ${UNITS[0]}
+  git add docs tools cards && git commit -m "chore: bootstrap agentic harness ($TYPE)"
 EOF

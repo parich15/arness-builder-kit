@@ -13,9 +13,22 @@ import { join } from "node:path";
 const app = process.argv[2];
 if (!app) { console.error("falta <app>"); process.exit(2); }
 
-const matrixPath = join(`docs/migration/apps/${app}/parity-matrix.md`);
-if (!existsSync(matrixPath)) {
-  console.error(`  (parity) no existe ${matrixPath}`);
+// Agnóstico al tipo de tarea: busca la matriz en las ubicaciones conocidas.
+// Migración  -> docs/migration/apps/<app>/parity-matrix.md
+// Greenfield  -> docs/build/components/<app>/acceptance-matrix.md
+// Override explícito -> env HARNESS_MATRIX (ruta directa al .md)
+const CANDIDATES = process.env.HARNESS_MATRIX
+  ? [process.env.HARNESS_MATRIX]
+  : [
+      `docs/migration/apps/${app}/parity-matrix.md`,
+      `docs/build/components/${app}/acceptance-matrix.md`,
+    ];
+
+const matrixPath = CANDIDATES.find((p) => existsSync(p));
+if (!matrixPath) {
+  console.error(`  (matrix) no encontré matriz para '${app}'. Busqué:`);
+  for (const c of CANDIDATES) console.error(`    - ${c}`);
+  console.error(`  (define HARNESS_MATRIX=<ruta> para forzar una)`);
   process.exit(2);
 }
 
@@ -55,10 +68,10 @@ for (const r of rows) {
 }
 
 const done = rows.filter((r) => r.estado === "done").length;
-console.log(`  (parity) ${app}: ${done}/${rows.length} filas done`);
+console.log(`  (matrix) ${app}: ${done}/${rows.length} filas done`);
 
 if (problems.length) {
-  console.error(`  (parity) ${problems.length} problema(s):`);
+  console.error(`  (matrix) ${problems.length} problema(s):`);
   for (const p of problems) console.error(`    - ${p}`);
   process.exit(1);
 }

@@ -19,31 +19,41 @@ Basado en el documento `Ingenieria de Loops Agenticos.html`. Resume el principio
 3. **Protocolo de tarjeta** (`cards/`) — cada unidad de trabajo tiene scope, input,
    acceptance criteria, budget y stop conditions explícitas.
 
-## Cómo usar este kit en un proyecto nuevo
+## Dos tipos de tarea: misma máquina, distinto vocabulario
+
+La pregunta clave: *"¿y si no es una migración, sino una app nueva?"*. El arnés se separa
+en dos capas:
+
+- **Maquinaria (invariante)** — vale para CUALQUIER tarea titánica:
+  `PROTOCOL.md`, los gates (`run-all.sh`, `no-mocks`, `matrix-check`, `boundaries-extra`),
+  el formato de tarjeta, `status.md`, y los scripts de agentes.
+- **Vocabulario (según el tipo)** — solo cambian un par de documentos:
+
+| | **migration** | **greenfield (app nueva)** |
+|--|---------------|----------------------------|
+| Mapa del territorio | `inventory.md` (cataloga legacy) + `salvage-matrix.md` | `spec.md` (qué construir + contratos) |
+| Matriz fila-a-fila | `parity-matrix.md` (legacy vs target) | `acceptance-matrix.md` (capacidad → test + artefacto) |
+| Verdad de referencia | el legacy (comportarse igual) | el spec + el test (pasar el test) |
+| Ubicación | `docs/migration/apps/<app>/` | `docs/build/components/<comp>/` |
+
+El gate `matrix-check.mjs` es **agnóstico**: detecta automáticamente cuál de las dos
+matrices existe (o usa `HARNESS_MATRIX=<ruta>` para forzar una) y valida ambas con el
+mismo parser. La regla anti-fraude ("fila done ⇒ el target existe en disco") es idéntica.
+
+Las plantillas de cada tipo viven en `templates/migration/` y `templates/greenfield/`.
+
+## Cómo instanciar el arnés en un repo
 
 ```bash
-# 1. Copia el kit a tu repo destino (el repo NX/monorepo limpio)
-cp -r ~/Proyectos/agentic-harness-kit/docs   /ruta/a/tu-repo/docs
-cp -r ~/Proyectos/agentic-harness-kit/tools  /ruta/a/tu-repo/tools
-cp    ~/Proyectos/agentic-harness-kit/PROTOCOL.template.md /ruta/a/tu-repo/docs/migration/PROTOCOL.md
+# Migración de un monorepo legacy:
+bash scaffold.sh --type migration  ~/work/vw-monorepo venues billing auth
 
-# 2. Rellena el estado real
-#    - docs/migration/inventory.md      (qué existe en legacy)
-#    - docs/migration/salvage-matrix.md (qué se reusa del intento anterior)
-#    - docs/migration/apps/<app>/parity-matrix.md (fila a fila, legacy vs target)
-
-# 3. Adapta los gates a tu stack (NX, comandos de build/lint reales)
-#    Edita tools/gates/run-all.sh y descomenta las líneas nx.
-
-# 4. Crea la jerarquía de agentes (profiles de Hermes)
-bash ~/Proyectos/agentic-harness-kit/agents/setup-profiles.sh
-
-# 5. Crea el board y las primeras tarjetas
-bash ~/Proyectos/agentic-harness-kit/agents/setup-board.sh
-
-# 6. Arranca el dispatcher (lee tarjetas ready y spawnea workers)
-hermes kanban daemon        # o déjalo al gateway si dispatch_in_gateway=true
+# App nueva (greenfield):
+bash scaffold.sh --type greenfield ~/work/nueva-app    auth dashboard
 ```
+
+El scaffold copia la maquinaria + el vocabulario del tipo elegido, renombra las plantillas
+por cada unidad de trabajo, y deja los gates listos (verdes en vacío). Probado end-to-end.
 
 ## Orden de ejecución (no te saltes fases)
 

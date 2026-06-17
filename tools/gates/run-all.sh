@@ -35,7 +35,7 @@ run_gate () {
 
 # ── Gates portables (Node puro, sin dependencias) — funcionan ya ──
 run_gate "no-mocks"        node tools/gates/no-mocks.mjs "$APP"
-run_gate "parity-check"    node tools/gates/parity-check.mjs "$APP"
+run_gate "matrix-check"    node tools/gates/matrix-check.mjs "$APP"
 run_gate "boundaries-extra" node tools/gates/boundaries-extra.mjs "$APP"
 
 echo "──────────────────────────────────────────"
