@@ -1,0 +1,5 @@
+# El kit es el molde. Las instancias viven en OTROS repos, no aqui.
+libs/
+apps/
+docs/migration/apps/*/
+!docs/migration/apps/_template/
