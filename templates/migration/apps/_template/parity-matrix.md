@@ -1,30 +1,23 @@
-# parity-matrix.md — <APP> (legacy vs target)
+# parity-matrix.md - <UNIT> (migration)
 
-> El corazón del sistema. Demuestra paridad **fila a fila**. El gate `parity-check.mjs`
-> lee este fichero y compara con los ficheros reales en disco.
-> Una fila solo se marca `done` cuando existe el target Y pasa los gates.
+> Demuestra paridad fila a fila entre el sistema actual y el target.
 
-## Formato (no cambiar las columnas — el gate las parsea)
+## Formato (no cambies las columnas; `matrix-check.mjs` las parsea)
 
-| id | Capacidad legacy | Ruta legacy | Target esperado (ruta) | Estado | Verificado por |
-|----|------------------|-------------|------------------------|--------|----------------|
-| 1  | Listar venues | `src/app/venues/list` | `libs/venues/feature-list/...` | pending | — |
-| 2  | Detalle venue | `src/app/venues/detail` | `libs/venues/feature-detail/...` | pending | — |
-| 12 | VenueService.getAll | `src/app/venues/venue.service.ts` | `libs/venues/data-access/venue.service.ts` | pending | — |
-| 13 | VenueService.getById | idem | idem | pending | — |
-| 14 | VenueService.create | idem | idem | pending | — |
+| id | Capacidad actual | Ruta / evidencia actual | Target esperado (ruta) | Estado | Verificado por |
+|----|------------------|-------------------------|------------------------|--------|----------------|
+| 1  | Capacidad observable A | `legacy/path/a` | `target/path/a` | pending | - |
+| 2  | Capacidad observable B | `legacy/path/b` | `target/path/b` | pending | - |
 
-## Estados válidos (el gate solo acepta estos)
+## Estados validos
 
-- `pending`  — no empezado
-- `wip`      — en progreso (worker activo)
-- `done`     — target existe + gates verdes + acceptance cumplido
-- `blocked`  — escalado al humano
+- `pending` - no empezado
+- `wip` - en progreso
+- `done` - target/evidencia existe + gates verdes + paridad revisada
+- `blocked` - escalado al humano
 
-## Reglas de la matriz
+## Reglas
 
-1. El `Target esperado (ruta)` es un contrato: el worker DEBE crear exactamente ese fichero.
-2. `parity-check.mjs <app>` falla (exit 1) si una fila está `done` pero el fichero target
-   no existe. Esto impide el self-report fraudulento.
-3. Los endpoints listados en `inventory.md` deben aparecer idénticos en el target.
-   Cambiar un endpoint = decisión de producto = `kanban_block`.
+1. El target esperado es contrato de la tarjeta.
+2. Una fila `done` debe tener target/evidencia existente en disco.
+3. Cambiar comportamiento visible requiere decision de producto documentada.

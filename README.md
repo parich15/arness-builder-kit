@@ -1,99 +1,164 @@
 # Agentic Harness Kit
 
-Plantilla reutilizable para bootstrapear un **sistema de loops agénticos auto-gestionado**
-sobre Hermes Agent + Codex. Sirve para cualquier tarea titánica (migraciones, refactors
-masivos, reescrituras), no solo la migración de Venue Workspace.
+Plantilla reutilizable para crear un **arnes de trabajo para agentes autonomos**. El arnes no depende de una herramienta concreta: puedes operarlo con Hermes Kanban, Claude Code, Codex, otro runner, o incluso manualmente. Lo importante es que el trabajo no viva en una conversacion larga, sino en artefactos verificables del repo.
 
-Basado en el documento `Ingenieria de Loops Agenticos.html`. Resume el principio central:
+Principio central:
 
-> El loop no se bootstrapea con prompts. Se bootstrapea con un **arnés**:
-> estado en disco + gates ejecutables + protocolo de tarjetas.
-> El arnés se construye ANTES de migrar/refactorizar una sola línea.
+> El loop no se bootstrapea con prompts. Se bootstrapea con un arnes:
+> estado en disco + gates ejecutables + tarjetas con scope.
 
-## Las tres piezas del arnés
+## Requisitos
 
-1. **Estado en disco** (`docs/migration/`) — un worker con contexto vacío debe poder
-   retomar el trabajo leyendo SOLO estos ficheros. Es la prueba de fuego.
-2. **Gates como código** (`tools/gates/`) — cada contrato arquitectónico es un comando
-   que devuelve exit 0 (pasa) o ≠0 (no pasa). Sin prosa, sin interpretación.
-3. **Protocolo de tarjeta** (`cards/`) — cada unidad de trabajo tiene scope, input,
-   acceptance criteria, budget y stop conditions explícitas.
+- **Node.js >= 18** — los gates son ficheros `.mjs` (ESM nativo); versiones anteriores no los ejecutan.
+- **bash** — para `run-all.sh` y los wrappers de scaffold.
+- **git** — varios gates leen el estado del repositorio (`scope-check`, entre otros).
 
-## Dos tipos de tarea: misma máquina, distinto vocabulario
+Aunque los gates son "portables" (sin `npm install`), siguen requiriendo Node en el sistema donde se ejecuten.
 
-La pregunta clave: *"¿y si no es una migración, sino una app nueva?"*. El arnés se separa
-en dos capas:
+## Que problema resuelve
 
-- **Maquinaria (invariante)** — vale para CUALQUIER tarea titánica:
-  `PROTOCOL.md`, los gates (`run-all.sh`, `no-mocks`, `matrix-check`, `boundaries-extra`),
-  el formato de tarjeta, `status.md`, y los scripts de agentes.
-- **Vocabulario (según el tipo)** — solo cambian un par de documentos:
+Sirve para trabajos grandes o de alto riesgo donde un agente aislado tiende a perder contexto:
 
-| | **migration** | **greenfield (app nueva)** |
-|--|---------------|----------------------------|
-| Mapa del territorio | `inventory.md` (cataloga legacy) + `salvage-matrix.md` | `spec.md` (qué construir + contratos) |
-| Matriz fila-a-fila | `parity-matrix.md` (legacy vs target) | `acceptance-matrix.md` (capacidad → test + artefacto) |
-| Verdad de referencia | el legacy (comportarse igual) | el spec + el test (pasar el test) |
-| Ubicación | `docs/migration/apps/<app>/` | `docs/build/components/<comp>/` |
+- migraciones de legacy a una nueva arquitectura;
+- greenfield de productos o modulos nuevos;
+- refactors grandes preservando comportamiento;
+- auditorias, hardening o saneamiento de deuda tecnica;
+- cualquier iniciativa que necesite varias tarjetas, varios workers y una definicion fuerte de "done".
 
-El gate `matrix-check.mjs` es **agnóstico**: detecta automáticamente cuál de las dos
-matrices existe (o usa `HARNESS_MATRIX=<ruta>` para forzar una) y valida ambas con el
-mismo parser. La regla anti-fraude ("fila done ⇒ el target existe en disco") es idéntica.
+## Las tres piezas invariantes
 
-Las plantillas de cada tipo viven en `templates/migration/` y `templates/greenfield/`.
+1. **Estado en disco** (`docs/...`)
+   Un worker con contexto limpio debe poder retomar leyendo solo el repo: protocolo, matriz, status y docs de verdad.
 
-## Cómo instanciar el arnés en un repo
+2. **Gates como codigo** (`tools/gates/`)
+   Cada contrato importante debe ser un comando con exit `0` si pasa y distinto de `0` si falla. La prosa orienta; el gate decide.
+
+3. **Protocolo de tarjeta** (`cards/`)
+   Cada unidad de trabajo declara scope, inputs, acceptance criteria, budget, acciones de done y condiciones de bloqueo.
+
+## Presets soportados
+
+Todos los presets usan la misma maquina. Cambia el vocabulario y la fuente de verdad.
+
+| Preset | Usalo cuando | Fuente de verdad | Matriz principal |
+|--------|--------------|------------------|------------------|
+| `generic` | Aun no encaja en un modo especifico, pero necesitas estado + gates + tarjetas | brief del objetivo + criterios escritos | `docs/harness/units/<unit>/verification-matrix.md` |
+| `migration` | Hay un sistema existente cuyo comportamiento debe preservarse | legacy observado + decisiones explicitas de producto | `docs/migration/apps/<unit>/parity-matrix.md` |
+| `greenfield` | Estas creando algo nuevo sin legacy que copiar | spec + tests de aceptacion | `docs/build/components/<unit>/acceptance-matrix.md` |
+| `refactor` | Cambias estructura interna manteniendo comportamiento observable | tests existentes + mapa de cambio + contratos publicos | `docs/refactor/units/<unit>/change-matrix.md` |
+| `audit` | Quieres auditar, hardenizar o cerrar deuda contra una politica | policy/checklist + evidencia reproducible | `docs/audit/scopes/<unit>/evidence-matrix.md` |
+
+Si el caso no encaja, usa `generic` primero y convierte el preset cuando la fuente de verdad este clara.
+
+## Como instanciar el arnes
 
 ```bash
-# Migración de un monorepo legacy:
-bash scaffold.sh --type migration  ~/work/vw-monorepo venues billing auth
+# Modo generico: buena opcion si aun estas definiendo el tipo de trabajo.
+bash scaffold.sh --type generic ~/work/proyecto core
 
-# App nueva (greenfield):
-bash scaffold.sh --type greenfield ~/work/nueva-app    auth dashboard
+# Migracion con paridad contra legacy.
+bash scaffold.sh --type migration ~/work/monorepo legacy-area billing
+
+# Producto o modulo nuevo.
+bash scaffold.sh --type greenfield ~/work/app auth dashboard
+
+# Refactor grande preservando comportamiento.
+bash scaffold.sh --type refactor ~/work/api payments reporting
+
+# Auditoria / hardening / deuda tecnica.
+bash scaffold.sh --type audit ~/work/platform security performance
 ```
 
-El scaffold copia la maquinaria + el vocabulario del tipo elegido, renombra las plantillas
-por cada unidad de trabajo, y deja los gates listos (verdes en vacío). Probado end-to-end.
+El scaffold copia la maquinaria comun, crea los documentos del preset elegido y deja los gates portables listos. Tras instanciar:
 
-## Orden de ejecución (no te saltes fases)
-
-- **Fase 0 — Arnés completo (1-2 días).** Repo limpio, gates verdes en vacío,
-  PROTOCOL.md, board creado. SIN migrar nada.
-- **Fase 1 — Piloto (1 app pequeña).** El objetivo NO es migrar la app; es descubrir
-  agujeros del arnés (gates que faltan, tarjetas mal dimensionadas).
-- **Fase 2 — Escala (2-3 apps en paralelo).** Cada app en su worktree, cada una con
-  su cadena `contracts → data-access → features → review`.
-
-## La métrica de éxito
-
-Si matas todos los procesos a mitad de la migración y mañana arrancas workers nuevos,
-¿retoman exactamente donde se quedó todo leyendo SOLO el disco?
-
-- **Sí** → tienes un sistema.
-- **No** → tienes una conversación larga que se degrada (lo de la última vez).
-
-## Estructura
-
+```bash
+cd ~/work/proyecto
+bash tools/gates/run-all.sh core
 ```
+
+Ese primer run debe estar verde en vacio o explicar claramente que falta adaptar.
+
+## Flujo recomendado
+
+1. **Fase 0 - Preparar el arnes.**
+   Elegir preset, rellenar docs de verdad, adaptar gates al stack y crear tarjetas pequenas. No implementar aun.
+
+2. **Fase 1 - Piloto.**
+   Ejecutar una unidad pequena para descubrir huecos del arnes: gates debiles, matrices ambiguas, scope demasiado grande.
+
+3. **Fase 2 - Escala controlada.**
+   Paralelizar solo cuando el piloto demuestre que el sistema de estado + gates + tarjetas es suficiente.
+
+## Integraciones de agentes
+
+El kit incluye scripts de ejemplo para Hermes Kanban en `agents/`, porque era el entorno original. Tratalos como **adaptadores**, no como el nucleo del arnes. El mismo protocolo funciona con otros runners si cumplen estas reglas:
+
+- arrancan con contexto fresco;
+- leen `docs/PROTOCOL.md` y la tarjeta;
+- respetan scope estricto;
+- ejecutan `bash tools/gates/run-all.sh <unit>`;
+- actualizan matriz/status solo cuando los gates y acceptance criteria pasan.
+
+## Estructura del kit
+
+```text
 agentic-harness-kit/
-├── README.md                       este fichero
-├── PROTOCOL.template.md             reglas del juego (cópialo como PROTOCOL.md)
-├── docs/migration/
-│   ├── inventory.md                 qué existe en legacy
-│   ├── salvage-matrix.md            reuse / adapt / discard del intento anterior
-│   └── apps/_template/
-│       ├── parity-matrix.md         checklist legacy vs target, fila a fila
-│       └── status.md                estado actual (lo actualizan los workers)
+├── README.md
+├── PROTOCOL.template.md
+├── scaffold.sh
+├── templates/
+│   ├── generic/
+│   ├── migration/
+│   ├── greenfield/
+│   ├── refactor/
+│   └── audit/
 ├── tools/gates/
-│   ├── run-all.sh                   orquesta todos los gates → exit 0/1
-│   ├── no-mocks.mjs                 prohíbe mocks/placeholders en prod
-│   ├── parity-check.mjs             compara parity-matrix vs ficheros reales
-│   └── boundaries-extra.mjs         reglas de import (shared no importa dominios…)
+│   ├── run-all.sh
+│   ├── matrix-check.mjs
+│   ├── no-mocks.mjs
+│   ├── boundaries-extra.mjs
+│   ├── scope-check.mjs
+│   └── tests/
+│       ├── run-tests.sh
+│       ├── run-tests.mjs
+│       └── README.md
 ├── cards/
-│   ├── card.template.md             forma exacta de una tarjeta
-│   └── example-card.md              ejemplo relleno
+│   ├── card.template.md
+│   └── example-card.md
 └── agents/
-    ├── AGENTS.md                    qué hace cada profile + modelo recomendado
-    ├── setup-profiles.sh            crea orquestador/explorador/ejecutor/qa
-    └── setup-board.sh               init board + tarjetas de ejemplo
+    ├── AGENTS.md
+    ├── setup-profiles.sh
+    └── setup-board.sh
 ```
+
+## Gates portables incluidos
+
+| Gate | Que hace | Configuracion |
+|------|----------|---------------|
+| `no-mocks.mjs` | Falla si hay mocks/stubs/placeholders en codigo productivo | `HARNESS_TARGET_ROOTS` |
+| `matrix-check.mjs` | Valida que filas `done` tengan target en disco, sin ids duplicados ni filas malformadas | `HARNESS_MATRIX`, `HARNESS_ALLOW_EMPTY_TARGETS` |
+| `boundaries-extra.mjs` | Impide imports entre dominios hermanos | `HARNESS_DOMAIN_NAMES`, `HARNESS_SHARED_ROOTS` |
+| `scope-check.mjs` | Falla si el diff de git toca rutas fuera del scope declarado | `HARNESS_SCOPE` (separado por `:` o `,`) o fichero `tools/gates/scope/<unit>.txt` |
+
+`scope-check` es advisory cuando no hay configuracion de scope: sale `0` con un aviso, para no romper repos recien scaffoldeados.
+
+## Tests del kit
+
+El propio kit tiene tests para verificar que los gates funcionan:
+
+```bash
+bash tools/gates/tests/run-tests.sh
+```
+
+La suite cubre `matrix-check`, `no-mocks` y `scope-check` con casos tanto de exito como de fallo. No requiere dependencias externas. Consulta `tools/gates/tests/README.md` para mas detalles.
+
+## Metrica de exito
+
+Si paras todos los procesos a mitad de una iniciativa y manana arrancas workers nuevos, deben poder contestar:
+
+1. que falta,
+2. que esta bloqueado,
+3. que comandos prueban el estado,
+4. que scope tiene la siguiente tarjeta.
+
+Si eso sale de los ficheros del repo, tienes un sistema. Si sale de la memoria de una conversacion, todavia no tienes arnes.

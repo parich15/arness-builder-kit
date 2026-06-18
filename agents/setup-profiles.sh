@@ -1,35 +1,30 @@
 #!/usr/bin/env bash
-# setup-profiles.sh — Crea la jerarquía de agentes como profiles de Hermes.
-# Idempotente: si un profile ya existe, lo salta.
+# setup-profiles.sh - Adaptador Hermes Kanban de ejemplo.
 #
-# La razón de existir: el dispatcher de kanban descarta en silencio cualquier assignee
-# que no sea un profile real. Sin estos profiles, las tarjetas se quedan en 'ready' para
-# siempre. Ejecuta esto ANTES de crear tarjetas.
-#
-# Ajusta los modelos a lo que tengas configurado (hermes model lista los disponibles).
+# Crea perfiles para los roles del arnes. Ajusta modelos via variables de entorno o edita
+# este fichero antes de usarlo en un proyecto real.
 
 set -euo pipefail
 
-# profile_name  ->  modelo sugerido (cámbialos a tu gusto)
 declare -A ROLES=(
-  [orchestrator]="claude-opus-4-8"     # razonador fuerte: descompone, no ejecuta
-  [explorer]="claude-sonnet-4"          # rápido/barato: cataloga legacy
-  [executor]="gpt-5.5-codex"            # músculo: implementa (vía Codex)
-  [qa]="gpt-5.5"                         # juez: corre gates, audita paridad
+  [orchestrator]="${HARNESS_ORCHESTRATOR_MODEL:-claude-opus-4-8}"
+  [explorer]="${HARNESS_EXPLORER_MODEL:-claude-sonnet-4}"
+  [executor]="${HARNESS_EXECUTOR_MODEL:-gpt-5.5-codex}"
+  [qa]="${HARNESS_QA_MODEL:-gpt-5.5}"
 )
 
 existing="$(hermes profile list 2>/dev/null || true)"
 
 for role in "${!ROLES[@]}"; do
   if echo "$existing" | grep -qw "$role"; then
-    echo "= profile '$role' ya existe — salto"
+    echo "= profile '$role' ya existe - salto"
     continue
   fi
-  echo "+ creando profile '$role' (modelo: ${ROLES[$role]})"
-  # --clone copia la config base del profile actual; luego fijamos el modelo.
+
+  echo "+ creando profile '$role' (modelo sugerido: ${ROLES[$role]})"
   hermes profile create "$role" --clone || hermes profile create "$role"
   hermes -p "$role" config set model.default "${ROLES[$role]}" 2>/dev/null \
-    || echo "  ! ajusta el modelo de '$role' a mano: hermes -p $role model"
+    || echo "  ! ajusta el modelo de '$role' a mano si ese nombre no existe"
 done
 
 echo ""
@@ -38,15 +33,12 @@ hermes profile list
 
 cat <<'EOF'
 
-SIGUIENTE PASO MANUAL (toolsets por rol — se hace una vez):
-  hermes -p orchestrator tools enable kanban
+SIGUIENTE PASO MANUAL (toolsets por rol, una vez):
+  hermes -p orchestrator tools enable kanban file
   hermes -p explorer     tools enable file terminal
   hermes -p executor     tools enable terminal file
   hermes -p qa           tools enable terminal file
 
-  # El orquestador NO debe tener terminal de implementación (anti-temptation):
-  hermes -p orchestrator tools disable terminal   # opcional pero recomendado
-
-Recuerda: el dispatcher corre en el gateway si kanban.dispatch_in_gateway=true,
-o arráncalo a mano con `hermes kanban daemon`.
+Recomendado: el orquestador no deberia tener herramientas de implementacion salvo que sea necesario.
+El dispatcher debe estar activo en tu entorno (`hermes kanban daemon` o gateway configurado).
 EOF

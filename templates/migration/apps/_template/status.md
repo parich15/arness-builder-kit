@@ -1,34 +1,31 @@
-# status.md — <APP>
+# status.md - <UNIT>
 
-> Estado vivo de la app. Lo actualizan los workers al terminar cada tarjeta (regla 6 del
-> PROTOCOL). Un worker nuevo lee esto + parity-matrix.md para saber dónde retomar.
-> NO se actualiza por memoria del agente — solo por lo que está en disco.
+> Estado vivo de esta unidad de migracion. Lo actualizan los workers; no depende de memoria de agente.
 
 ## Resumen
 
-- **Fase:** Fase 0 (arnés) | Fase 1 (piloto) | Fase 2 (escala)
-- **Última actualización:** _(fecha + id de tarjeta)_
-- **Filas parity done / total:** 0 / N
+- **Fase:** Fase 0 (arnes) | Fase 1 (piloto) | Fase 2 (escala)
+- **Ultima actualizacion:** _(fecha + id de tarjeta)_
+- **Filas done / total:** 0 / N
 - **Tarjetas blocked esperando humano:** ninguna
 
-## Cadena de tarjetas de esta app
+## Cadena sugerida
 
-```
-contracts  →  data-access  →  features  →  review
- (T-c)         (T-da)          (T-f)        (T-r)
+```text
+inventory -> contracts -> implementation -> parity review
 ```
 
 | Tarjeta | Estado | Worker | Notas |
 |---------|--------|--------|-------|
-| T-c contracts (tipos, interfaces, tokens) | pending | — | |
-| T-da data-access (servicios, llamadas API) | pending | — | depende de T-c |
-| T-f features (componentes, páginas) | pending | — | depende de T-da |
-| T-r review (auditoría de paridad) | pending | — | depende de T-f |
+| inventariar slice | pending | - | |
+| definir contratos target | pending | - | depende de inventario |
+| implementar slice | pending | - | depende de contratos |
+| review de paridad | pending | - | gates + matriz |
 
-## Log de eventos (append-only, lo más reciente arriba)
+## Log append-only
 
-- _(vacío — los workers añaden líneas aquí: "2026-06-17 T-da done, filas 12-14 parity, 5 ficheros")_
+- _(vacio)_
 
-## Decisiones de producto pendientes (bloquean el humano)
+## Decisiones de producto pendientes
 
-- _(vacío)_
+- _(vacio)_

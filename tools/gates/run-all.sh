@@ -1,17 +1,15 @@
 #!/usr/bin/env bash
-# run-all.sh — Orquesta todos los gates. Exit 0 = pasa, ≠0 = no pasa.
-# Uso: bash tools/gates/run-all.sh <app>
-# Este es el ÚNICO árbitro de "done" a nivel técnico. El juez/QA lee SOLO su exit code.
+# run-all.sh - orquesta gates del arnes. Exit 0 = pasa, distinto de 0 = falla.
+# Uso: bash tools/gates/run-all.sh <unit>
 
 set -euo pipefail
 
-APP="${1:-}"
-if [ -z "$APP" ]; then
-  echo "ERROR: falta <app>. Uso: bash tools/gates/run-all.sh <app>" >&2
+UNIT="${1:-}"
+if [ -z "$UNIT" ]; then
+  echo "ERROR: falta <unit>. Uso: bash tools/gates/run-all.sh <unit>" >&2
   exit 2
 fi
 
-# Raíz del repo (este script vive en tools/gates/)
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT"
 
@@ -19,30 +17,37 @@ FAILED=0
 run_gate () {
   local name="$1"; shift
   echo "──────────────────────────────────────────"
-  echo "▶ GATE: $name"
+  echo "GATE: $name"
   if "$@"; then
-    echo "  ✔ $name"
+    echo "  OK $name"
   else
-    echo "  x $name FALLO (exit $?)" >&2
+    local code=$?
+    echo "  FAIL $name (exit $code)" >&2
     FAILED=1
   fi
 }
 
-# ── Gates de stack (NX/Angular) — DESCOMENTA y adapta a tu proyecto ──
-# run_gate "typecheck" npx nx run "${APP}:typecheck"
-# run_gate "build"     npx nx run "${APP}:build" --skip-nx-cache
-# run_gate "lint+boundaries" npx nx run "${APP}:lint"   # con @nx/enforce-module-boundaries + tags
+# Gates especificos del stack del repo destino. Crea este fichero si necesitas build,
+# typecheck, lint, test, e2e, contrato de API, etc.
+if [ -x tools/gates/stack-gates.sh ]; then
+  run_gate "stack-gates" bash tools/gates/stack-gates.sh "$UNIT"
+else
+  echo "──────────────────────────────────────────"
+  echo "GATE: stack-gates"
+  echo "  SKIP no existe tools/gates/stack-gates.sh (anadelo en el repo destino si aplica)"
+fi
 
-# ── Gates portables (Node puro, sin dependencias) — funcionan ya ──
-run_gate "no-mocks"        node tools/gates/no-mocks.mjs "$APP"
-run_gate "matrix-check"    node tools/gates/matrix-check.mjs "$APP"
-run_gate "boundaries-extra" node tools/gates/boundaries-extra.mjs "$APP"
+# Gates portables sin dependencias.
+run_gate "no-mocks"         node tools/gates/no-mocks.mjs "$UNIT"
+run_gate "matrix-check"     node tools/gates/matrix-check.mjs "$UNIT"
+run_gate "boundaries-extra" node tools/gates/boundaries-extra.mjs "$UNIT"
+run_gate "scope-check"      node tools/gates/scope-check.mjs "$UNIT"
 
 echo "──────────────────────────────────────────"
 if [ "$FAILED" -eq 0 ]; then
-  echo "✅ TODOS LOS GATES VERDES para '$APP'"
+  echo "TODOS LOS GATES VERDES para '$UNIT'"
   exit 0
 else
-  echo "❌ HAY GATES EN ROJO para '$APP' — la tarjeta NO está done." >&2
+  echo "HAY GATES EN ROJO para '$UNIT' - la tarjeta NO esta done." >&2
   exit 1
 fi

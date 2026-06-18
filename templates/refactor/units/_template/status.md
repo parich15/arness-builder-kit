@@ -1,7 +1,5 @@
 # status.md - <UNIT>
 
-> Estado vivo de esta unidad greenfield. Lo actualizan los workers; no depende de memoria de agente.
-
 ## Resumen
 
 - **Fase:** Fase 0 (arnes) | Fase 1 (piloto) | Fase 2 (escala)
@@ -12,19 +10,20 @@
 ## Cadena sugerida
 
 ```text
-spec -> tests -> implementation -> review
+baseline -> seam -> move -> cleanup -> review
 ```
 
 | Tarjeta | Estado | Worker | Notas |
 |---------|--------|--------|-------|
-| definir acceptance/tests | pending | - | |
-| implementar slice | pending | - | depende de tests |
-| review | pending | - | gates + matriz |
+| capturar baseline | pending | - | |
+| crear seam | pending | - | |
+| mover slice | pending | - | |
+| review | pending | - | |
 
 ## Log append-only
 
 - _(vacio)_
 
-## Decisiones pendientes
+## Riesgos / bloqueos
 
 - _(vacio)_

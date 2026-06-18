@@ -1,29 +1,31 @@
-# Tarjeta — venues: data-access de VenueService
+# Tarjeta ejemplo - refactor: separar repositorio de pagos
 
-**Scope:** SOLO `libs/venues/data-access`. Prohibido tocar cualquier otra carpeta.
+**Preset:** `refactor`
 
-**Input:** `docs/migration/apps/venues/parity-matrix.md`, filas 12-14.
-Endpoints en `inventory.md`. En `salvage-matrix.md`, VenueService v1 está marcado ADAPT
-(usa NgModule + mock de auth: úsalo como referencia, NO lo copies tal cual).
+**Unit:** `payments`
+
+**Scope permitido:**
+- SOLO `packages/payments/repository/`
+- SOLO `packages/payments/tests/repository/`
+
+**Fuente de verdad:**
+- `docs/refactor/architecture-map.md`
+- `docs/refactor/units/payments/change-matrix.md`, filas 3-5
 
 **Acceptance criteria:**
-- `bash tools/gates/run-all.sh venues` sale 0.
-- Existen en disco: `libs/venues/data-access/venue.service.ts` con `getAll`, `getById`, `create`.
-- Endpoints idénticos a legacy:
-  - `GET /api/venues` → `Venue[]`
-  - `GET /api/venues/:id` → `Venue`
-  - `POST /api/venues` → `Venue`
-- `inject(HttpClient)` (sin constructor DI), servicio standalone, sin NgModule.
-- Sin mocks/placeholders (lo verifica `no-mocks.mjs`).
+- `bash tools/gates/run-all.sh payments` sale `0`.
+- Las filas 3-5 de `change-matrix.md` estan `done` solo si existen los targets/evidencias.
+- La API publica de `payments` no cambia.
+- Los tests existentes de pagos siguen verdes.
+- No se toca codigo fuera del scope permitido.
 
-**Budget:** máx. 8 intentos / 45 minutos.
+**Budget:** max. 6 intentos / 45 minutos.
 
 **Al terminar:**
-1. Filas 12-14 → `done` en `parity-matrix.md`.
-2. Línea en log de `status.md`: fecha + "T-da done, filas 12-14, N ficheros".
-3. Commit `feat: venues - data-access VenueService (getAll/getById/create)`.
-4. `kanban_complete` con resumen + lista de ficheros.
+1. Filas 3-5 -> `done` en `change-matrix.md`.
+2. Entrada append-only en `docs/refactor/units/payments/status.md`.
+3. Gate final ejecutado y resumido.
+4. Completar tarjeta con resumen + ficheros tocados.
 
-**Si bloqueado:** `kanban_block`. Ejemplo de bloqueo legítimo: "el endpoint POST /api/venues
-del legacy devuelve un shape distinto al documentado en inventory.md — necesito decisión
-de producto sobre cuál es el contrato correcto".
+**Si bloqueado:**
+Bloquear con comando reproducible y razon concreta. Ejemplo: "el test publico X falla antes del cambio, necesito decision sobre si reparar baseline o excluirlo del scope".

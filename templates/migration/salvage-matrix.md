@@ -1,27 +1,21 @@
-# salvage-matrix.md — Qué se reusa del intento anterior
+# salvage-matrix.md - Que se reusa de intentos o artefactos previos
 
-> El intento de migración fallido NO se tira a la basura: se convierte en **cantera auditada**.
-> Cada artefacto del intento anterior se clasifica: REUSE / ADAPT / DISCARD.
-> Lo rellena el `explorer` con apoyo del `qa` en Fase 0.
+> Si existe un intento anterior, no se tira ni se copia a ciegas: se convierte en cantera auditada.
 
-## Criterio de clasificación
+## Criterio de clasificacion
 
-- **REUSE** — pasa los gates actuales tal cual. Se copia sin tocar.
-- **ADAPT** — la idea es buena pero incumple un contrato (boundaries, mocks, NgModules).
-  Se reusa como referencia pero se reescribe para pasar gates.
-- **DISCARD** — roto, obsoleto, o contradice el target. Se ignora (no se borra el legacy;
-  solo no se usa como fuente).
+- **REUSE** - pasa los gates actuales tal cual y respeta los contratos.
+- **ADAPT** - la idea sirve, pero incumple algun contrato o necesita reescritura.
+- **DISCARD** - roto, obsoleto, contradice la fuente de verdad o cuesta mas rescatarlo que rehacerlo.
 
 ## Matriz
 
-| Artefacto (intento anterior) | Ruta | Clasificación | Por qué | Gate que incumple |
-|------------------------------|------|---------------|---------|-------------------|
-| VenueService v1 | `old-attempt/venues/...` | ADAPT | usa NgModule + mock de auth | no-mocks, standalone |
-| venue-card component | `old-attempt/...` | REUSE | standalone, sin deuda | — |
+| Artefacto previo | Ruta | Clasificacion | Por que | Gate/contrato afectado |
+|------------------|------|---------------|---------|------------------------|
+| modulo previo A | `old/path/a` | ADAPT | buena idea, mal boundary | boundaries-extra |
+| util comun B | `old/path/b` | REUSE | aislado y probado | - |
 | | | | | |
 
-## Regla de oro del salvage
+## Regla
 
-Nunca copies código del intento anterior directo a producción sin pasarlo por
-`tools/gates/run-all.sh`. La razón por la que el intento falló fue que el código
-"parecía bien" pero incumplía contratos que eran prosa. Ahora son gates: si no pasa, no entra.
+Nada entra en produccion solo porque "parece util". Entra si pasa `tools/gates/run-all.sh <unit>` y queda reflejado en la matriz correspondiente.

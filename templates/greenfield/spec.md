@@ -1,39 +1,35 @@
-# spec.md — Qué vamos a construir (greenfield)
+# spec.md - Que vamos a construir
 
-> El "mapa del territorio" para una app NUEVA. Sustituye a inventory.md (que cataloga
-> legacy). Aquí no hay legacy: hay una visión de producto que hay que volver verificable.
-> Lo rellena el humano (tú) con apoyo del `explorer` para investigar referencias técnicas.
+> Fuente de verdad para un preset `greenfield`. Aqui no hay legacy que copiar: hay una intencion de producto/tecnica que debe convertirse en criterios verificables.
 
-## Visión (1 párrafo)
+## Vision
 
-_(Qué es la app, para quién, qué problema resuelve. Sin esto, el juez no tiene contra qué medir.)_
+_(Que es, para quien, que problema resuelve y que no intenta resolver.)_
 
-## Stack y decisiones de arquitectura (contratos)
+## Contratos de producto
 
-> Estas decisiones se vuelven gates. Si no están aquí, el worker las inventa.
+| id | Contrato visible | Prioridad | Notas |
+|----|------------------|-----------|-------|
+| C1 | _(capacidad principal)_ | 1 | |
+| C2 | _(capacidad secundaria)_ | 2 | |
 
-- **Framework / runtime:** _(ej: Next.js 15 + React 19, o NestJS, o Angular standalone)_
-- **Estado:** _(ej: signals, sin Redux)_
-- **Estilos:** _(ej: Tailwind, sin CSS inline)_
-- **Datos / API:** _(ej: tRPC, REST, GraphQL — define el contrato)_
-- **Boundaries:** _(ej: `features/` no se importan entre sí; `shared/` no importa features)_
-- **Tests:** _(ej: Vitest unit + Playwright e2e; cobertura mínima por feature)_
+## Decisiones de arquitectura
 
-## Capacidades (epics) — cada una se expande a filas en acceptance-matrix.md
+> Si una decision importa, debe acabar reflejada en un gate o acceptance criterion.
 
-| id | Capacidad | Prioridad | Notas |
-|----|-----------|-----------|-------|
-| C1 | Auth (login, registro, sesión) | 1 | |
-| C2 | Dashboard | 2 | depende de C1 |
-| C3 | _(añade)_ | | |
+- **Framework/runtime:** _(...)_
+- **Datos/API:** _(...)_
+- **Estado:** _(...)_
+- **UI/estilos:** _(...)_
+- **Boundaries:** _(...)_
+- **Tests requeridos:** _(...)_
 
-## Endpoints / contrato de datos (si aplica)
+## Contratos de datos/API (si aplica)
 
-| Método | Ruta | Request | Response | Capacidad |
-|--------|------|---------|----------|-----------|
-| POST | `/api/auth/login` | `{email,password}` | `{token}` | C1 |
+| Metodo | Ruta / evento | Request | Response | Capacidad |
+|--------|---------------|---------|----------|-----------|
 | | | | | |
 
-## Fuera de scope (explícito — evita scope creep)
+## Fuera de scope
 
-- _(lista lo que NO se construye en esta tanda. El worker que toque esto → kanban_block.)_
+- _(lista explicita de lo que no se construye en esta tanda)_

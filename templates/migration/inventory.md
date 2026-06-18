@@ -1,42 +1,38 @@
-# inventory.md — Qué existe en el legacy
+# inventory.md - Que existe en el sistema actual
 
-> Mapa del territorio. Lo rellena un **explorador** (profile read-only) en Fase 0.
-> No se migra nada sin que la zona esté inventariada aquí.
+> Fuente de verdad para preset `migration`. Cataloga el comportamiento que debe preservarse. No se migra nada sin inventario suficiente.
 
-## Cómo se rellena
+## Como se rellena
 
-Una tarjeta de tipo "explore" asignada al profile `explorer` recorre el legacy y
-completa estas tablas. El explorador NO escribe código de producción; solo cataloga.
+Un explorer read-only recorre legacy, producto, logs o documentacion existente y completa estas tablas. No escribe codigo de produccion.
 
-## Apps / dominios
+## Areas / dominios
 
-| App / dominio | Ruta legacy | Estado migración | Prioridad | Notas |
-|---------------|-------------|------------------|-----------|-------|
-| venues        | `src/app/venues` | pendiente | 1 | app piloto |
-| billing       | `src/app/billing` | pendiente | 2 | |
-| _(añade filas)_ | | | | |
+| Area / dominio | Ruta actual | Estado migracion | Prioridad | Notas |
+|----------------|-------------|------------------|-----------|-------|
+| legacy-area-a | `legacy/path/a` | pendiente | 1 | piloto sugerido |
+| _(anade)_ | | | | |
 
-## Componentes
+## Componentes / modulos
 
-| Componente | Ruta legacy | Tipo (page/widget/shared) | Depende de | Target lib |
-|------------|-------------|---------------------------|------------|------------|
+| Componente | Ruta actual | Tipo | Depende de | Target propuesto |
+|------------|-------------|------|------------|------------------|
 | | | | | |
 
-## Servicios
+## Servicios / integraciones
 
-| Servicio | Ruta legacy | Responsabilidad | Endpoints que llama | Target lib |
-|----------|-------------|-----------------|---------------------|------------|
+| Servicio | Ruta actual | Responsabilidad | Contratos que usa | Target propuesto |
+|----------|-------------|-----------------|-------------------|------------------|
 | | | | | |
 
-## Endpoints (contrato con backend — NO cambiar sin decisión de producto)
+## Contratos visibles que NO deben cambiar sin decision
 
-| Método | URL | Usado por | Request shape | Response shape |
-|--------|-----|-----------|---------------|----------------|
-| GET | `/api/venues` | VenueService | — | `Venue[]` |
+| Tipo | Nombre / ruta | Request/input | Response/output | Usado por |
+|------|---------------|---------------|-----------------|-----------|
 | | | | | |
 
-## Rutas
+## Rutas / flujos relevantes
 
-| Ruta legacy | Componente | Guards | Target |
-|-------------|-----------|--------|--------|
+| Flujo actual | Entrada | Salida esperada | Target |
+|--------------|---------|-----------------|--------|
 | | | | |
